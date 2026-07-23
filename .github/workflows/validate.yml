@@ -1,0 +1,15 @@
+name: validate-sql
+on: [push, pull_request]
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: retail, POSTGRES_PASSWORD: retail, POSTGRES_DB: retail_analytics }
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U retail -d retail_analytics" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: for f in db/migrations/*.sql db/seeds/*.sql db/queries.sql; do PGPASSWORD=retail psql -h localhost -U retail -d retail_analytics -f "$f"; done
