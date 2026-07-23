@@ -23,3 +23,36 @@ FROM customer_orders;
 WITH daily AS (SELECT order_day, sum(order_revenue) AS revenue FROM vw_order_revenue GROUP BY 1)
 SELECT order_day, revenue, sum(revenue) OVER (ORDER BY order_day RANGE BETWEEN INTERVAL '29 days' PRECEDING AND CURRENT ROW) AS rolling_30_day_revenue
 FROM daily ORDER BY order_day;
+
+-- 5. recursive_category_revenue.sql
+WITH RECURSIVE category_tree AS (
+    -- Anchor member: top-level categories (no parent)
+    SELECT
+        category_id,
+        name,
+        parent_category_id,
+        category_id AS root_category_id
+    FROM product_category
+    WHERE parent_category_id IS NULL
+
+    UNION ALL
+
+    -- Recursive member: each child inherits its ancestor's root category
+    SELECT
+        c.category_id,
+        c.name,
+        c.parent_category_id,
+        ct.root_category_id
+    FROM product_category c
+    JOIN category_tree ct ON c.parent_category_id = ct.category_id
+)
+
+SELECT
+    root.name                              AS top_level_category,
+    SUM(oi.quantity * oi.unit_price)::numeric(12,2) AS total_revenue
+FROM category_tree ct
+JOIN product_category root ON ct.root_category_id = root.category_id
+JOIN product p              ON p.category_id = ct.category_id
+JOIN sales_order_item oi    ON oi.product_id = p.product_id
+GROUP BY root.name
+ORDER BY total_revenue DESC;
