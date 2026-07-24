@@ -11,7 +11,8 @@ services:
     volumes:
       - ./db/migrations/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./db/migrations/002_analytics_views.sql:/docker-entrypoint-initdb.d/002_analytics_views.sql:ro
-      - ./db/seeds/001_demo_data.sql:/docker-entrypoint-initdb.d/003_demo_data.sql:ro
+      - ./db/migrations/003_category_hierarchy.sql:/docker-entrypoint-initdb.d/003_category_hierarchy.sql:ro
+      - ./db/seeds/001_demo_data.sql:/docker-entrypoint-initdb.d/004_demo_data.sql:ro
       - .:/workspace:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u retail -pretail"]

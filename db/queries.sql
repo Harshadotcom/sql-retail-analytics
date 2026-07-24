@@ -20,3 +20,19 @@ WITH daily AS (SELECT order_day, SUM(order_revenue) AS revenue FROM vw_order_rev
 SELECT d1.order_day, d1.revenue,
   (SELECT SUM(d2.revenue) FROM daily d2 WHERE d2.order_day BETWEEN DATE_SUB(d1.order_day, INTERVAL 29 DAY) AND d1.order_day) AS rolling_30_day_revenue
 FROM daily d1 ORDER BY d1.order_day;
+
+WITH RECURSIVE category_tree AS (
+  SELECT category_id, name, parent_category_id, category_id AS root_category_id
+  FROM product_category WHERE parent_category_id IS NULL
+  UNION ALL
+  SELECT c.category_id, c.name, c.parent_category_id, ct.root_category_id
+  FROM product_category c JOIN category_tree ct ON c.parent_category_id = ct.category_id
+)
+SELECT root.name AS top_level_category, CAST(SUM(oi.quantity * oi.unit_price) AS DECIMAL(12,2)) AS total_revenue
+FROM category_tree ct
+JOIN product_category root ON root.category_id = ct.root_category_id
+JOIN product p ON p.category_id = ct.category_id
+JOIN sales_order_item oi ON oi.product_id = p.product_id
+JOIN sales_order o ON o.order_id = oi.order_id
+WHERE o.status = 'paid'
+GROUP BY root.name ORDER BY total_revenue DESC;
