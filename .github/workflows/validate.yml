@@ -1,15 +1,16 @@
-name: validate-sql
+name: validate-mysql
 on: [push, pull_request]
 jobs:
   migration-check:
     runs-on: ubuntu-latest
     services:
-      postgres:
-        image: postgres:16-alpine
-        env: { POSTGRES_USER: retail, POSTGRES_PASSWORD: retail, POSTGRES_DB: retail_analytics }
-        ports: [5432:5432]
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_DATABASE: retail_analytics, MYSQL_USER: retail, MYSQL_PASSWORD: retail, MYSQL_ROOT_PASSWORD: root }
+        ports: [3306:3306]
         options: >-
-          --health-cmd "pg_isready -U retail -d retail_analytics" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "mysqladmin ping -h localhost -u retail -pretail" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - run: for f in db/migrations/*.sql db/seeds/*.sql db/queries.sql; do PGPASSWORD=retail psql -h localhost -U retail -d retail_analytics -f "$f"; done
+      - run: sudo apt-get update && sudo apt-get install -y mysql-client
+      - run: for f in db/migrations/*.sql db/seeds/*.sql db/queries.sql; do mysql -h 127.0.0.1 -uretail -pretail retail_analytics < "$f"; done

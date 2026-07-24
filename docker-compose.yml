@@ -1,19 +1,20 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: mysql:8.4
     environment:
-      POSTGRES_USER: retail
-      POSTGRES_PASSWORD: retail
-      POSTGRES_DB: retail_analytics
+      MYSQL_DATABASE: retail_analytics
+      MYSQL_USER: retail
+      MYSQL_PASSWORD: retail
+      MYSQL_ROOT_PASSWORD: root
     ports:
-      - "5434:5432"
+      - "3307:3306"
     volumes:
       - ./db/migrations/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./db/migrations/002_analytics_views.sql:/docker-entrypoint-initdb.d/002_analytics_views.sql:ro
       - ./db/seeds/001_demo_data.sql:/docker-entrypoint-initdb.d/003_demo_data.sql:ro
       - .:/workspace:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U retail -d retail_analytics"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u retail -pretail"]
       interval: 5s
       timeout: 3s
       retries: 10
